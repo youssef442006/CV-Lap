@@ -1197,8 +1197,8 @@ class CVPlaygroundPanel(QWidget):
         title.setStyleSheet("color:#ff44dd;font-size:13px;font-weight:bold;letter-spacing:1px;")
         main.addWidget(title)
 
-        sub = QLabel("Real-time CV algorithms overlaid on the processed frame")
-        sub.setStyleSheet("color:#555;font-size:10px;font-style:italic;")
+        sub = QLabel("Real-time CV algorithms (preferred to work on live video)")
+        sub.setStyleSheet("color:#555;font-size:12px;font-style:italic;")
         sub.setWordWrap(True)
         main.addWidget(sub)
 
