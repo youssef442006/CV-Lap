@@ -289,7 +289,8 @@ Each checkpoint has:
 - **Smile detection** works best with frontal face, good lighting, and visible teeth — OpenCV's smile cascade is inherently unreliable
 - **Face Recognition** uses LBP texture description only — not a real identity database. Labels are positional (Person, ID-1, ID-2...)
 - **Depth Map** is a focus-gradient approximation — not real metric depth (requires stereo cameras for that)
-- **SIFT Matching** auto-uses the first frame as reference — no manual capture button
+- **Playground Processor** preferre to use it on live video than photos
+- 
 
 ---
 
