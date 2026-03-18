@@ -1019,20 +1019,30 @@ class CVLab(QMainWindow):
         self.op1.currentTextChanged.connect(lambda m: (self._build_params(m, self.form1, self.sliders1, primary=True),self._update_filter_explain(m)))
         v1.addWidget(self.op1); self.form1=QFormLayout(); v1.addLayout(self.form1); g1.setLayout(v1)
 
+
         self.filter_explain_box = QGroupBox("💡  How This Filter Works")
         self.filter_explain_box.setStyleSheet(
             "QGroupBox{color:#ffcc44;font-weight:bold;border:1px solid #554400;"
             "margin-top:10px;border-radius:4px;background:#0d0b00;}"
             "QGroupBox::title{subcontrol-origin:margin;left:8px;}")
-        explain_lay = QVBoxLayout()
+        self.filter_explain_box.setFixedHeight(300)
+
         self.filter_explain_lbl = QLabel("← Select a filter to see how it works")
-        self.filter_explain_lbl.setStyleSheet(
-            "color:#888;font-size:30px;font-style:italic;"
-            "padding:6px;line-height:160%;")
+        self.filter_explain_lbl.setStyleSheet("color:#888;font-size:11px;padding:4px;")
         self.filter_explain_lbl.setWordWrap(True)
         self.filter_explain_lbl.setAlignment(Qt.AlignTop)
-        self.filter_explain_lbl.setMinimumHeight(110)
-        explain_lay.addWidget(self.filter_explain_lbl)
+
+        explain_scroll = QScrollArea()
+        explain_scroll.setWidget(self.filter_explain_lbl)
+        explain_scroll.setWidgetResizable(True)
+        explain_scroll.setStyleSheet(
+            "QScrollArea{border:none;background:#0d0b00;}"
+            "QScrollBar:vertical{background:#1a1200;width:5px;border-radius:2px;}"
+            "QScrollBar::handle:vertical{background:#554400;border-radius:2px;}")
+
+        explain_lay = QVBoxLayout()
+        explain_lay.setContentsMargins(4, 4, 4, 4)
+        explain_lay.addWidget(explain_scroll)
         self.filter_explain_box.setLayout(explain_lay)
 
         h_hdr=QLabel("HISTOGRAM (processed):"); h_hdr.setStyleSheet("color:#00ffcc;font-size:12px;margin-top:4px;")
@@ -1335,8 +1345,7 @@ class CVLab(QMainWindow):
             self.save_status_lbl.setStyleSheet("color:#ff4444;font-size:10px;")
 
     def save_processed(self):
-        frame = (self._last_display_proc if self.playground_panel.save_with_overlay
-                else self._last_proc)
+        frame = (self._last_proc)
         self._write_image(frame, "processed")
 
     def save_original(self):
@@ -1494,48 +1503,50 @@ class CVLab(QMainWindow):
         self._render_orig(img); self._notify()
 
     # ── Param UI ──────────────────────────────────────────────
-    def _build_params(self, mode, form, sliders, primary):
-        while form.rowCount() > 0: form.removeRow(0)
+    def _build_params(self, mode, form, sliders, primary=False):
+
+        while form.rowCount() > 0:
+            form.removeRow(0)
         sliders.clear()
         cfg = OPERATIONS_CONFIG.get(mode, [])
-        if mode == "Custom Kernel":
-            ph = QLabel("Edit kernel in  🧮 Custom K  tab →")
-            ph.setStyleSheet("color:#ff9944;font-size:10px;font-style:italic;")
-            ph.setAlignment(Qt.AlignCenter)
-            form.addRow(ph)
-        elif not cfg:
-            ph = QLabel("No adjustable parameters")
-            ph.setStyleSheet("color:#444;font-size:10px;font-style:italic;")
-            ph.setAlignment(Qt.AlignCenter)
-            form.addRow(ph)
-        else:
-            for p in cfg:
-                nl = QLabel(p["name"] + ":")
-                nl.setStyleSheet("color:#aaa;font-size:10px;min-width:110px;")
-                sl = QSlider(Qt.Horizontal)
-                sl.setRange(p["min"], p["max"])
-                sl.setValue(p["default"])
-                sl.setMinimumWidth(120)
-                vl = QLabel(str(p["default"]))
-                vl.setFixedWidth(38)
-                vl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                vl.setStyleSheet("color:#00ffcc;font-size:10px;font-weight:bold;")
-                sl.valueChanged.connect(lambda v, l=vl: l.setText(str(v)))
-                sl.valueChanged.connect(self._notify)
-                rw = QWidget()
-                rw.setStyleSheet("background:transparent;")
-                rl = QHBoxLayout(rw)
-                rl.setContentsMargins(0, 0, 0, 0)
-                rl.setSpacing(4)
-                rl.addWidget(sl, 1)
-                rl.addWidget(vl)
-                form.addRow(nl, rw)
-                sliders[p["name"]] = sl
-        self._notify()
+
+        for p in cfg:
+            # ── label فوق ────────────────────────────────────
+            nl = QLabel(p["name"])
+            nl.setStyleSheet("color:#bb88ff;font-size:10px;font-weight:bold;")
+
+            # ── slider + value في row ─────────────────────────
+            sl = QSlider(Qt.Horizontal)
+            sl.setRange(p["min"], p["max"]); sl.setValue(p["default"])
+            sl.setStyleSheet(
+                "QSlider::groove:horizontal{border:1px solid #442255;height:6px;"
+                "background:#1a0a2a;border-radius:3px;}"
+                "QSlider::handle:horizontal{background:#ff44dd;width:12px;"
+                "margin:-3px 0;border-radius:6px;}"
+                "QSlider::sub-page:horizontal{background:#882288;border-radius:3px;}")
+
+            vl = QLabel(str(p["default"]))
+            vl.setFixedWidth(32)
+            vl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            vl.setStyleSheet("color:#ff44dd;font-size:10px;font-weight:bold;")
+            sl.valueChanged.connect(lambda v, l=vl: l.setText(str(v)))
+            sl.valueChanged.connect(lambda _: self._notify())
+
+            sl_row = QHBoxLayout()
+            sl_row.setContentsMargins(0,0,0,0); sl_row.setSpacing(4)
+            sl_row.addWidget(sl, 1); sl_row.addWidget(vl)
+
+            # ── wrapper: label فوق، slider تحت ───────────────
+            wrapper = QWidget(); wrapper.setStyleSheet("background:transparent;")
+            wl = QVBoxLayout(wrapper)
+            wl.setContentsMargins(0, 2, 0, 2); wl.setSpacing(2)
+            wl.addWidget(nl)
+            wl.addLayout(sl_row)
+
+            form.addRow(wrapper)
+            sliders[p["name"]] = sl
+
         if primary:
-            params = {n: s.value() for n, s in sliders.items()}
-            ck = self._custom_kernel if mode == "Custom Kernel" else None
-            self.kernel_viewer.set_mode(mode, params, custom_kernel=ck)
             self._update_filter_explain(mode)
 
 # ── Notify thread ─────────────────────────────────────────
